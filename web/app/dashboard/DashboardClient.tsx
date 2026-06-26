@@ -73,7 +73,39 @@ export default function DashboardClient({
 
   const [items, setItems] = useState<QueueItem[]>([]);
 
-  // --- Extension detection ------------------------------------------------
+  // --- Extension detection + auto-pair ------------------------------------
+  // Prevents overlapping pair attempts (auto-pair retries on each poll tick).
+  const pairingRef = useRef(false);
+
+  const connectExtension = useCallback(
+    async (silent = false) => {
+      if (pairingRef.current) return;
+      pairingRef.current = true;
+      setPairing(true);
+      if (!silent) setError(null);
+      try {
+        const { data } = await supabase.current.auth.getSession();
+        const session = data.session;
+        if (!session) throw new Error('Not signed in');
+        const ok = await pairExtension(
+          extensionId,
+          session.access_token,
+          session.refresh_token
+        );
+        if (!ok) throw new Error('Pairing was rejected by the extension');
+        setExtStatus('paired');
+      } catch (e) {
+        // A silent auto-pair just retries on the next poll; only surface the
+        // error when the user explicitly clicked to (re)connect.
+        if (!silent) setError(e instanceof Error ? e.message : 'Pairing failed');
+      } finally {
+        pairingRef.current = false;
+        setPairing(false);
+      }
+    },
+    [extensionId]
+  );
+
   const checkExtension = useCallback(async () => {
     if (!extensionId || !isExtensionApiAvailable()) {
       setExtStatus('missing');
@@ -84,33 +116,24 @@ export default function DashboardClient({
       setExtStatus('missing');
       return;
     }
-    setExtStatus(res.paired ? 'paired' : 'unpaired');
-  }, [extensionId]);
-
-  useEffect(() => {
-    checkExtension();
-  }, [checkExtension]);
-
-  async function connectExtension() {
-    setPairing(true);
-    setError(null);
-    try {
-      const { data } = await supabase.current.auth.getSession();
-      const session = data.session;
-      if (!session) throw new Error('Not signed in');
-      const ok = await pairExtension(
-        extensionId,
-        session.access_token,
-        session.refresh_token
-      );
-      if (!ok) throw new Error('Pairing was rejected by the extension');
+    if (res.paired) {
       setExtStatus('paired');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Pairing failed');
-    } finally {
-      setPairing(false);
+      return;
     }
-  }
+    setExtStatus('unpaired');
+    // Installed but not paired: hand over the session tokens automatically,
+    // so the user never has to click "Connect".
+    connectExtension(true);
+  }, [extensionId, connectExtension]);
+
+  // Poll until paired so the banner reacts on its own when the extension is
+  // installed or enabled after the page has loaded - no manual "re-check".
+  useEffect(() => {
+    if (extStatus === 'paired') return;
+    checkExtension();
+    const id = setInterval(checkExtension, 2500);
+    return () => clearInterval(id);
+  }, [extStatus, checkExtension]);
 
   // --- Upload + extract ---------------------------------------------------
   async function handleFile(file: File) {
@@ -237,8 +260,7 @@ export default function DashboardClient({
       <ExtensionBanner
         status={extStatus}
         pairing={pairing}
-        onConnect={connectExtension}
-        onRecheck={checkExtension}
+        onConnect={() => connectExtension(false)}
       />
 
       {error && (
@@ -488,12 +510,10 @@ function ExtensionBanner({
   status,
   pairing,
   onConnect,
-  onRecheck,
 }: {
   status: ExtStatus;
   pairing: boolean;
   onConnect: () => void;
-  onRecheck: () => void;
 }) {
   if (status === 'paired') {
     return (
@@ -514,28 +534,28 @@ function ExtensionBanner({
 
   if (status === 'missing') {
     return (
-      <div className="border-border bg-panel flex items-center justify-between border px-3 py-3 text-xs">
+      <div className="border-border bg-panel border px-3 py-3 text-xs">
         <div className="text-muted leading-relaxed">
-          Crate Digger extension not detected. Install it in Chrome, then
-          <button onClick={onRecheck} className="text-accent ml-1 underline">
-            re-check
-          </button>
-          .
+          Crate Digger extension not detected. Install it in Chrome — this page
+          connects automatically once it is enabled.
         </div>
       </div>
     );
   }
 
-  // unpaired
+  // unpaired — auto-pair is running; offer a manual retry as a fallback.
   return (
     <div className="border-border bg-panel flex items-center justify-between border px-3 py-3 text-xs">
-      <span className="text-muted">Extension installed but not connected.</span>
+      <span className="text-muted flex items-center gap-2">
+        <span className="border-accent inline-block h-3 w-3 animate-spin rounded-full border-2 border-t-transparent" />
+        Connecting extension…
+      </span>
       <button
         onClick={onConnect}
         disabled={pairing}
-        className="bg-accent text-accent-fg px-3 py-1 text-[11px] font-bold uppercase tracking-wider disabled:opacity-40"
+        className="text-accent underline disabled:opacity-40"
       >
-        {pairing ? 'Connecting…' : 'Connect extension'}
+        Retry
       </button>
     </div>
   );
