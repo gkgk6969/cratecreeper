@@ -12,7 +12,11 @@
     "service_worker": "background.js"
   },
   "externally_connectable": {
-    "matches": ["http://localhost:3000/*", "http://localhost:3001/*"]
+    "matches": [
+      "http://localhost:3000/*",
+      "http://localhost:3001/*",
+      "https://cratecreeper-kh9c.vercel.app/*"
+    ]
   },
   "action": {
     "default_popup": "popup/popup.html",
