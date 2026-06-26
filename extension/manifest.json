@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Crate Digger",
-  "version": "0.2.0",
-  "description": "Auto-add Beatport tracks from a tracklist screenshot. Pairs with the Crate Digger web app.",
+  "name": "Gatekeep · Crate Digger",
+  "version": "1.0.0",
+  "description": "Pairs with the Gatekeep Crate Digger web app to fill your Beatport cart from a tracklist screenshot.",
   "permissions": ["tabs", "storage", "alarms", "scripting"],
   "host_permissions": [
     "*://*.beatport.com/*",
@@ -20,7 +20,7 @@
   },
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "Crate Digger"
+    "default_title": "Gatekeep · Crate Digger"
   },
   "content_scripts": [
     {

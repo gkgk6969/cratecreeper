@@ -2,116 +2,93 @@ const $ = (sel) => document.querySelector(sel);
 
 const statusDot = $('#statusDot');
 const statusText = $('#statusText');
-const queueEl = $('#queue');
-const emptyEl = $('#empty');
-const startBtn = $('#startBtn');
-const pauseBtn = $('#pauseBtn');
-const cancelBtn = $('#cancelBtn');
-const debugToggle = $('#debugToggle');
+const hintEl = $('#hint');
+const dashboardLink = $('#dashboardLink');
 
-function escapeHtml(s) {
-  return String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
+const DASHBOARD_URL =
+  (typeof self !== 'undefined' &&
+    self.CRATE_DIGGER_CONFIG &&
+    self.CRATE_DIGGER_CONFIG.DASHBOARD_URL) ||
+  'https://cratecreeper-kh9c.vercel.app/dashboard';
+
+dashboardLink.href = DASHBOARD_URL;
 
 function render({ state, connected }) {
-  statusDot.classList.toggle('connected', !!connected);
-  const tracksList = state.queue?.tracks || [];
-  const statusesObj = state.statuses || {};
-  const hasCaptcha = tracksList.some(
-    (t, i) => (statusesObj[t.id ?? i]?.state) === 'captcha'
-  );
-
-  if (!state.paired) {
-    statusText.textContent = 'not connected - open the Crate Digger web app';
-  } else if (!connected) {
-    statusText.textContent = state.email
-      ? `${state.email} - connecting...`
-      : 'connecting...';
-  } else if (hasCaptcha) {
-    statusText.textContent = 'captcha - solve in tab, then Start';
-  } else if (state.running) {
-    statusText.textContent = `running ${state.currentIdx + 1} / ${
-      state.queue?.tracks?.length || 0
-    }`;
-  } else {
-    statusText.textContent = state.email
-      ? `${state.email} - ready`
-      : 'ready - waiting for tracklist';
-  }
-
   const tracks = state.queue?.tracks || [];
   const statuses = state.statuses || {};
+  const hasCaptcha = tracks.some(
+    (t, i) => (statuses[t.id ?? i]?.state) === 'captcha'
+  );
+  const inCart = tracks.filter((t, i) => {
+    const s = statuses[t.id ?? i]?.state;
+    return s === 'added' || s === 'unconfirmed';
+  }).length;
 
-  if (tracks.length === 0) {
-    queueEl.innerHTML = '';
-    emptyEl.style.display = '';
-    startBtn.disabled = true;
-    pauseBtn.disabled = true;
-    cancelBtn.disabled = true;
-  } else {
-    emptyEl.style.display = 'none';
-    queueEl.innerHTML = tracks
-      .map((t, i) => {
-        const s = statuses[t.id ?? i] || { state: 'pending' };
-        const icon = ICONS[s.state] || '\u00B7';
-        return `
-          <div class="row ${s.state}">
-            <span class="icon">${icon}</span>
-            <span class="text">
-              <span class="artist">${escapeHtml(t.artist)}</span><span class="sep">-</span>${escapeHtml(t.title)}
-            </span>
-          </div>
-        `;
-      })
-      .join('');
-    startBtn.disabled = state.running;
-    pauseBtn.disabled = !state.running;
-    cancelBtn.disabled = false;
+  statusDot.className = 'status-dot';
+  hintEl.textContent = '';
+
+  if (!state.paired) {
+    statusDot.classList.add('off');
+    statusText.textContent = 'Not connected';
+    hintEl.textContent =
+      'Open the dashboard and sign in — pairing happens automatically.';
+    return;
   }
 
-  debugToggle.checked = !!state.debug;
-}
+  if (!connected) {
+    statusDot.classList.add('warn');
+    statusText.textContent = 'Connecting…';
+    hintEl.textContent = state.email || '';
+    return;
+  }
 
-const ICONS = {
-  pending: '\u00B7',
-  searching: '\u25CB',
-  added: '\u2713',
-  ambiguous: '?',
-  notfound: 'x',
-  error: '!',
-  captcha: '\u26A0',
-};
+  if (hasCaptcha) {
+    statusDot.classList.add('warn');
+    statusText.textContent = 'Captcha on Beatport';
+    hintEl.textContent =
+      'Solve it in your Beatport tab, then continue from the dashboard.';
+    return;
+  }
+
+  statusDot.classList.add('connected');
+
+  if (state.running && tracks.length > 0) {
+    const n = Math.min(state.currentIdx + 1, tracks.length);
+    statusText.textContent = `Filling cart — ${inCart} / ${tracks.length}`;
+    hintEl.textContent = state.email
+      ? `Signed in as ${state.email}. Watch progress on the dashboard.`
+      : 'Watch progress on the dashboard.';
+    return;
+  }
+
+  if (tracks.length > 0 && inCart > 0) {
+    statusText.textContent = `Ready — ${inCart} track${inCart === 1 ? '' : 's'} in cart`;
+    hintEl.textContent = state.email
+      ? `Signed in as ${state.email}`
+      : 'Open the dashboard to review or start a new list.';
+    return;
+  }
+
+  statusText.textContent = state.email
+    ? `Connected as ${state.email}`
+    : 'Connected and ready';
+  hintEl.textContent = 'Drop a tracklist screenshot on the dashboard to begin.';
+}
 
 async function refresh() {
   try {
     const res = await chrome.runtime.sendMessage({ type: 'getState' });
     if (res) render(res);
-  } catch {}
+  } catch {
+    statusDot.className = 'status-dot off';
+    statusText.textContent = 'Extension starting…';
+    hintEl.textContent = '';
+  }
 }
-
-startBtn.addEventListener('click', async () => {
-  await chrome.runtime.sendMessage({ type: 'start' });
-  refresh();
-});
-pauseBtn.addEventListener('click', async () => {
-  await chrome.runtime.sendMessage({ type: 'pause' });
-  refresh();
-});
-cancelBtn.addEventListener('click', async () => {
-  await chrome.runtime.sendMessage({ type: 'cancel' });
-  refresh();
-});
-debugToggle.addEventListener('change', async () => {
-  await chrome.runtime.sendMessage({ type: 'toggleDebug' });
-  refresh();
-});
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === 'state') refresh();
 });
 
 refresh();
-setInterval(refresh, 1500);
+setInterval(refresh, 2000);
