@@ -6,9 +6,25 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/browser';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [usePassword, setUsePassword] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  async function signInWithPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    window.location.href = '/dashboard';
+  }
 
   async function sendLink(e: React.FormEvent) {
     e.preventDefault();
@@ -56,6 +72,49 @@ export default function LoginPage() {
             Open it on this device to continue.
           </p>
         </div>
+      ) : usePassword ? (
+        <form onSubmit={signInWithPassword} className="flex flex-col gap-4">
+          <label className="text-muted text-xs uppercase tracking-wider">
+            Email
+          </label>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className="border-border focus:border-accent w-full border bg-transparent p-3 text-sm outline-none"
+          />
+          <label className="text-muted text-xs uppercase tracking-wider">
+            Password
+          </label>
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            className="border-border focus:border-accent w-full border bg-transparent p-3 text-sm outline-none"
+          />
+          {error && <div className="text-danger text-xs">{error}</div>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-accent text-accent-fg py-3 text-sm font-bold uppercase tracking-wider disabled:opacity-40"
+          >
+            {loading ? 'Signing in…' : 'Sign in'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setUsePassword(false);
+              setError(null);
+            }}
+            className="text-muted hover:text-fg text-[11px] underline"
+          >
+            Use magic link instead
+          </button>
+        </form>
       ) : (
         <form onSubmit={sendLink} className="flex flex-col gap-4">
           <label className="text-muted text-xs uppercase tracking-wider">
@@ -80,6 +139,16 @@ export default function LoginPage() {
           <p className="text-muted text-[11px] leading-relaxed">
             We use passwordless sign-in. No password to remember.
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              setUsePassword(true);
+              setError(null);
+            }}
+            className="text-muted hover:text-fg text-[11px] underline"
+          >
+            Sign in with password
+          </button>
         </form>
       )}
     </main>

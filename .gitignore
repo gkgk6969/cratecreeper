@@ -5,6 +5,7 @@ release/
 *.log
 .env
 .env.local
+store-assets/chrome-review-test-instructions.txt
 resources/ocr/apple-ocr
 *.tsbuildinfo
 .vite/

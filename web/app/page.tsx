@@ -95,18 +95,23 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="text-muted mt-auto pt-24 text-xs">
-        Crate Digger is a{' '}
-        <a
-          href="https://gatekeep.app"
-          target="_blank"
-          rel="noreferrer"
-          className="text-accent hover:underline"
-        >
-          Gatekeep
-        </a>{' '}
-        tool. It is independent and not affiliated with Beatport. You complete
-        every purchase yourself.
+      <footer className="text-muted mt-auto flex flex-col gap-2 pt-24 text-xs">
+        <p>
+          Crate Digger is a{' '}
+          <a
+            href="https://gatekeep.app"
+            target="_blank"
+            rel="noreferrer"
+            className="text-accent hover:underline"
+          >
+            Gatekeep
+          </a>{' '}
+          tool. It is independent and not affiliated with Beatport. You complete
+          every purchase yourself.
+        </p>
+        <Link href="/privacy" className="text-accent hover:underline">
+          Privacy policy
+        </Link>
       </footer>
     </main>
   );
