@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="popup.css" />
+    <title>Crate Digger Bridge</title>
+  </head>
+  <body>
+    <div class="header">
+      <div class="title">crate digger bridge</div>
+      <div class="status-dot" id="statusDot"></div>
+    </div>
+    <div class="status-text" id="statusText">connecting...</div>
+
+    <div class="empty" id="empty">
+      No queue. Upload a tracklist in the Crate Digger web app.
+    </div>
+
+    <div class="queue" id="queue"></div>
+
+    <div class="actions">
+      <button id="startBtn" class="primary">Start</button>
+      <button id="pauseBtn">Pause</button>
+      <button id="cancelBtn" class="danger">Cancel</button>
+    </div>
+
+    <div class="footer">
+      <label class="debug">
+        <input type="checkbox" id="debugToggle" />
+        debug logging
+      </label>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

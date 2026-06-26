@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Crate Digger",
+  "version": "0.2.0",
+  "description": "Auto-add Beatport tracks from a tracklist screenshot. Pairs with the Crate Digger web app.",
+  "permissions": ["tabs", "storage", "alarms", "scripting"],
+  "host_permissions": [
+    "*://*.beatport.com/*",
+    "https://*.supabase.co/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "externally_connectable": {
+    "matches": ["http://localhost:3000/*", "http://localhost:3001/*"]
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Crate Digger"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.beatport.com/*"],
+      "js": ["content/selectors.js", "content/string-similarity.js", "content/beatport.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
