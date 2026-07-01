@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Gatekeep · Crate Digger',
+  title: 'Gatekeep · cratecreep',
   description:
-    'Crate Digger by Gatekeep — screenshot a tracklist, fill your Beatport cart automatically. Stop data-entering tracklists.',
+    'cratecreep by Gatekeep — screenshot a tracklist, fill your Beatport cart automatically. Stop data-entering tracklists.',
 };
 
 export default function RootLayout({

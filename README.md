@@ -1,4 +1,4 @@
-# Crate Digger
+# cratecreep
 
 > **The product is now the web app in [`web/`](web/).** Upload a tracklist
 > screenshot, review the tracks, and the Chrome extension fills your Beatport
@@ -58,7 +58,7 @@ Click `settings` in the title bar:
 
 ## How matching works
 
-When a new audio file lands in your Downloads folder, Crate Digger:
+When a new audio file lands in your Downloads folder, cratecreep:
 
 1. Reads the ID3 tags (artist, title, BPM, key, genre) via `music-metadata`
 2. Falls back to filename if tags are missing

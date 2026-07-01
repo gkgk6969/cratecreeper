@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser';
+import { getGatekeepAppStoreUrl } from '@/lib/gatekeep';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -49,7 +50,7 @@ export default function LoginPage() {
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
       <div className="mb-10 flex items-baseline gap-2">
         <a
-          href="https://gatekeep.app"
+          href={getGatekeepAppStoreUrl()}
           target="_blank"
           rel="noreferrer"
           className="text-accent text-sm font-bold uppercase tracking-[0.3em]"
@@ -60,7 +61,7 @@ export default function LoginPage() {
           href="/"
           className="text-muted hover:text-fg text-xs uppercase tracking-wider"
         >
-          Crate Digger
+          cratecreep
         </Link>
       </div>
 

@@ -24,5 +24,5 @@ export type QueueItem = {
   updated_at: string;
 };
 
-// The daily cap on paid Claude extractions, per user.
-export const DAILY_EXTRACT_LIMIT = 30;
+// Daily cap on Claude extractions per user (free beta).
+export const DAILY_EXTRACT_LIMIT = 10;

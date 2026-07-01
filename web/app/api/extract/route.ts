@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
-import { getSubscription, isActive } from '@/lib/subscription';
 import { extractWithClaude, parseImageDataUrl } from '@/lib/claude';
 import { DAILY_EXTRACT_LIMIT } from '@/lib/types';
 
@@ -16,12 +15,6 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
-
-  // Defense in depth: re-check subscription in the handler, not just middleware.
-  const sub = await getSubscription(supabase, user.id);
-  if (!isActive(sub)) {
-    return NextResponse.json({ error: 'Subscription required' }, { status: 402 });
   }
 
   // Parse + validate the upload before spending a Claude call.

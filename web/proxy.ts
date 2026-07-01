@@ -42,22 +42,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Paid API gating (first layer; handlers re-check). 401 if unauthenticated,
-  // 402 if not subscribed.
+  // Auth-only API gating (handlers re-check). Free during beta — login required.
   if (PAID_APIS.some((p) => pathname.startsWith(p))) {
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('status')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (!sub || !['active', 'trialing'].includes(sub.status)) {
-      return NextResponse.json(
-        { error: 'Subscription required' },
-        { status: 402 }
-      );
     }
   }
 

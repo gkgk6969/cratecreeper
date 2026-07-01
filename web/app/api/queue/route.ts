@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
-import { getSubscription, isActive } from '@/lib/subscription';
-
 export const runtime = 'nodejs';
 
 type IncomingTrack = {
@@ -19,11 +17,6 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
-
-  const sub = await getSubscription(supabase, user.id);
-  if (!isActive(sub)) {
-    return NextResponse.json({ error: 'Subscription required' }, { status: 402 });
   }
 
   let tracks: IncomingTrack[];

@@ -1,4 +1,4 @@
-# Crate Digger — Web app
+# cratecreep — Web app
 
 Paid web SaaS: upload a tracklist screenshot, review the tracks Claude reads,
 and watch the Chrome extension fill your Beatport cart in real time.

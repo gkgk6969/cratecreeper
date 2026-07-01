@@ -1,4 +1,4 @@
-// Crate Digger extension service worker.
+// cratecreep extension service worker.
 //
 // Transport: Supabase Realtime (was a local WebSocket bridge to the Electron
 // app). The web app inserts queue_items via a server-side route; this worker
@@ -20,9 +20,15 @@ const SEARCH_URL = (q) =>
 const INTER_TRACK_DELAY_MS = [3000, 7000];
 const rand = (a, b) => a + Math.random() * (b - a);
 
+// Hard ceiling per track. If the content script never reports back (page never
+// loaded, script crashed, etc.) the watchdog marks the track errored and moves
+// on so the queue can't freeze on one stuck track.
+const TRACK_TIMEOUT_MS = 45000;
+
 let sb = null; // Supabase client
 let channel = null; // Realtime channel
 let loadDebounce = null;
+let trackWatchdog = null; // timer id for the current track's stall guard
 
 const STATE = {
   queue: null, // { sessionId, tracks: [{ id, rowId, idx, artist, title, mix }] }
@@ -287,6 +293,31 @@ async function navigateToTrack(track) {
   return tab.id;
 }
 
+function clearTrackWatchdog() {
+  if (trackWatchdog) {
+    clearTimeout(trackWatchdog);
+    trackWatchdog = null;
+  }
+}
+
+// Arm a stall guard for the track at `idx`. If it fires, the track is still
+// stuck "searching" with no reply, so mark it errored and advance the queue.
+function armTrackWatchdog(idx) {
+  clearTrackWatchdog();
+  trackWatchdog = setTimeout(async () => {
+    trackWatchdog = null;
+    if (!STATE.running || STATE.currentIdx !== idx) return;
+    if (STATE.statuses[idx]?.state !== 'searching') return;
+    setStatus(idx, {
+      state: 'error',
+      detail: 'timed out waiting for Beatport (no response)',
+    });
+    await saveState();
+    const delay = rand(INTER_TRACK_DELAY_MS[0], INTER_TRACK_DELAY_MS[1]);
+    setTimeout(() => processNext(), delay);
+  }, TRACK_TIMEOUT_MS);
+}
+
 async function startQueue() {
   if (!STATE.queue || STATE.running) return;
   STATE.running = true;
@@ -310,6 +341,7 @@ async function processNext() {
   }
 
   if (nextIdx === -1) {
+    clearTrackWatchdog();
     STATE.running = false;
     STATE.currentIdx = -1;
     await saveState();
@@ -321,22 +353,26 @@ async function processNext() {
   const track = tracks[nextIdx];
   setStatus(nextIdx, { state: 'searching' });
   await saveState();
+  armTrackWatchdog(nextIdx);
 
   try {
     await navigateToTrack(track);
   } catch (e) {
+    clearTrackWatchdog();
     setStatus(nextIdx, { state: 'error', detail: e.message });
     await processNext();
   }
 }
 
 async function pauseQueue() {
+  clearTrackWatchdog();
   STATE.running = false;
   await saveState();
   notifyPopup();
 }
 
 async function cancelQueue() {
+  clearTrackWatchdog();
   STATE.running = false;
   STATE.queue = null;
   STATE.statuses = {};
@@ -409,6 +445,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: false, reason: 'no current track' });
         return;
       }
+      clearTrackWatchdog();
       setStatus(idx, {
         state: msg.state,
         detail: msg.detail || null,

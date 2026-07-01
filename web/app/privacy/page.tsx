@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getGatekeepAppStoreUrl } from '@/lib/gatekeep';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy · Gatekeep Crate Digger',
-  description: 'How Gatekeep Crate Digger collects, uses, and protects your data.',
+  title: 'Privacy Policy · Gatekeep cratecreep',
+  description: 'How Gatekeep cratecreep collects, uses, and protects your data.',
 };
 
 const UPDATED = '26 June 2026';
@@ -13,14 +14,16 @@ export default function PrivacyPage() {
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-16">
       <header className="flex items-center justify-between">
         <div className="flex items-baseline gap-2">
-          <Link
-            href="/"
+          <a
+            href={getGatekeepAppStoreUrl()}
+            target="_blank"
+            rel="noreferrer"
             className="text-accent text-sm font-bold uppercase tracking-[0.3em]"
           >
             Gatekeep
-          </Link>
+          </a>
           <span className="text-muted text-xs uppercase tracking-wider">
-            Crate Digger
+            cratecreep
           </span>
         </div>
         <Link
@@ -39,7 +42,7 @@ export default function PrivacyPage() {
 
         <Section title="Overview">
           <p>
-            Gatekeep Crate Digger (&ldquo;Crate Digger&rdquo;, &ldquo;we&rdquo;,
+            Gatekeep cratecreep (&ldquo;cratecreep&rdquo;, &ldquo;we&rdquo;,
             &ldquo;us&rdquo;) is a web app and Chrome extension that helps you
             turn a tracklist screenshot into a Beatport cart. This policy
             describes what data we collect, why we collect it, and your choices.
@@ -125,7 +128,7 @@ export default function PrivacyPage() {
 
         <Section title="Chrome extension">
           <p>
-            The Gatekeep Crate Digger extension only accesses Beatport while you
+            The Gatekeep cratecreep extension only accesses Beatport while you
             run a queue you started, and Supabase to sync with your account. It
             does not browse other sites, log your general web history, or complete
             purchases for you. You always check out on Beatport yourself.
@@ -168,7 +171,7 @@ export default function PrivacyPage() {
 
       <footer className="text-muted mt-auto pt-16 text-xs">
         <Link href="/" className="text-accent hover:underline">
-          ← Back to Crate Digger
+          ← Back to cratecreep
         </Link>
       </footer>
     </main>

@@ -527,7 +527,7 @@ function ExtensionBanner({
   if (status === 'checking') {
     return (
       <div className="border-border text-muted border px-3 py-2 text-xs">
-        Checking for the Crate Digger extension…
+        Checking for the cratecreep extension…
       </div>
     );
   }
@@ -536,7 +536,7 @@ function ExtensionBanner({
     return (
       <div className="border-border bg-panel border px-3 py-3 text-xs">
         <div className="text-muted leading-relaxed">
-          Crate Digger extension not detected. Install it in Chrome — this page
+          cratecreep extension not detected. Install it in Chrome — this page
           connects automatically once it is enabled.
         </div>
       </div>

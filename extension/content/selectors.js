@@ -130,6 +130,10 @@ window.CRATE_DIGGER_CONFIG = {
   // If the top two candidates are within this score gap (and both above the
   // minimum), the match is "ambiguous" - we add nothing and flag for review.
   matchAmbiguousGap: 0.08,
+  // Minimum artist similarity (0-1) required to cart. Stops a strong title
+  // match with the wrong artist (e.g. "Princess Di" vs "Prince") slipping
+  // through on combined score alone; below this we flag "ambiguous".
+  matchMinArtistSim: 0.4,
   // Weights for the combined score (should sum to ~1). Title matters most;
   // mix/version gets its own term so two results with the same title (e.g.
   // "Supadrug" Original vs Underground Mix) are distinguished by version.

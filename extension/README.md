@@ -1,7 +1,7 @@
-# Crate Digger — Chrome extension
+# cratecreep — Chrome extension
 
 Walks a logged-in Beatport tab and adds each queued track to your cart. It
-talks to the Crate Digger web app over Supabase Realtime — there is no desktop
+talks to the cratecreep web app over Supabase Realtime — there is no desktop
 app or local server anymore.
 
 ## Install (unpacked, for development)

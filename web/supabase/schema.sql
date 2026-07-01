@@ -1,4 +1,4 @@
--- Crate Digger Supabase schema + RLS.
+-- cratecreep Supabase schema + RLS.
 -- Run in the Supabase SQL editor (or via the CLI) on a fresh project.
 --
 -- Security model:

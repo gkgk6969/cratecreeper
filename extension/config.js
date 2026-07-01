@@ -1,4 +1,4 @@
-// Crate Digger extension config.
+// cratecreep extension config.
 //
 // These are PUBLIC values, safe to ship in a client:
 //   - SUPABASE_URL and SUPABASE_ANON_KEY are the same ones the web app exposes

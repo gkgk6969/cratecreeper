@@ -39,7 +39,7 @@
   },
   "build": {
     "appId": "com.cratedigger.app",
-    "productName": "Crate Digger",
+    "productName": "cratecreep",
     "directories": {
       "output": "release"
     },

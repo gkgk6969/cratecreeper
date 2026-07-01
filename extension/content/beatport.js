@@ -186,7 +186,7 @@
   // of both scoring a perfect title match.
   function scoreCandidate(track, parsed) {
     const sim = window.CRATE_DIGGER_SIM;
-    if (!sim) return 0;
+    if (!sim) return { score: 0, titleSim: 0, artistSim: 0, mixSim: 0 };
     const titleSim = sim.compareTwoStrings(
       normForMatch(track.title),
       normForMatch(parsed.title)
@@ -199,11 +199,11 @@
     const candMix = canonMix(parsed.mix);
     const mixSim =
       wantMix === candMix ? 1 : sim.compareTwoStrings(wantMix, candMix);
-    return (
+    const score =
       CFG.titleWeight * titleSim +
       CFG.artistWeight * artistSim +
-      CFG.mixWeight * mixSim
-    );
+      CFG.mixWeight * mixSim;
+    return { score, titleSim, artistSim, mixSim };
   }
 
   // Score every candidate and return the best plus the runner-up score, so the
@@ -212,7 +212,7 @@
     const candidates = collectInlineCartButtons();
     if (candidates.length === 0) return null;
     const scored = candidates
-      .map((c) => ({ ...c, score: scoreCandidate(track, c.parsed) }))
+      .map((c) => ({ ...c, ...scoreCandidate(track, c.parsed) }))
       .sort((a, b) => b.score - a.score);
     return {
       best: scored[0],
@@ -326,6 +326,20 @@
         detail: `no confident match (best "${matchedStr}" scored ${fmtScore(
           best.score
         )})`,
+        productUrl,
+      };
+    }
+
+    // Strong title but wrong artist is the classic false positive (e.g.
+    // "Princess Di - What's My Name" matching "Prince - What's My Name").
+    // A high combined score can hide a near-zero artist match, so guard the
+    // artist term directly and flag for review rather than carting it.
+    if (best.artistSim < CFG.matchMinArtistSim) {
+      return {
+        state: 'ambiguous',
+        detail: `artist mismatch (wanted "${track.artist}", got "${
+          parsed.artist || '?'
+        }") - review on Beatport`,
         productUrl,
       };
     }
@@ -446,7 +460,16 @@
     }
     window.__crateDiggerDebug = !!res.debug;
 
-    const result = await processSearchPage(res.track);
+    // Always produce a result. If processing throws, report an error rather
+    // than silently bailing - otherwise the background never hears back and the
+    // whole queue freezes on this track.
+    let result;
+    try {
+      result = await processSearchPage(res.track);
+    } catch (e) {
+      result = { state: 'error', detail: 'page error: ' + (e?.message || e) };
+      window.__crateDigger.lastResult = result;
+    }
     debug('final result', result);
     chrome.runtime.sendMessage({ type: 'trackResult', ...result }).catch(() => {});
   }

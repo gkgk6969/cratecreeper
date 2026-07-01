@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getSubscription } from '@/lib/subscription';
+import { getGatekeepAppStoreUrl } from '@/lib/gatekeep';
 import AccountActions from './AccountActions';
 
 export default async function AccountPage() {
@@ -23,14 +24,14 @@ export default async function AccountPage() {
           ? 'Payment due'
           : sub?.status === 'canceled'
             ? 'Cancelled'
-            : 'No subscription';
+            : 'Free beta';
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col px-6 py-10">
       <header className="mb-8 flex items-center justify-between">
         <div className="flex items-baseline gap-2">
           <a
-            href="https://gatekeep.app"
+            href={getGatekeepAppStoreUrl()}
             target="_blank"
             rel="noreferrer"
             className="text-accent text-sm font-bold uppercase tracking-[0.3em]"
@@ -41,7 +42,7 @@ export default async function AccountPage() {
             href="/dashboard"
             className="text-muted hover:text-fg text-xs uppercase tracking-wider"
           >
-            Crate Digger
+            cratecreep
           </Link>
         </div>
         <Link

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getGatekeepAppStoreUrl } from '@/lib/gatekeep';
 
 export default function LandingPage() {
   return (
@@ -6,7 +7,7 @@ export default function LandingPage() {
       <header className="flex items-center justify-between">
         <div className="flex items-baseline gap-2">
           <a
-            href="https://gatekeep.app"
+            href={getGatekeepAppStoreUrl()}
             target="_blank"
             rel="noreferrer"
             className="text-accent text-sm font-bold uppercase tracking-[0.3em]"
@@ -14,7 +15,7 @@ export default function LandingPage() {
             Gatekeep
           </a>
           <span className="text-muted text-xs uppercase tracking-wider">
-            Crate Digger
+            cratecreep
           </span>
         </div>
         <Link
@@ -27,12 +28,12 @@ export default function LandingPage() {
 
       <section className="mt-24 flex flex-col gap-6">
         <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
-          Spend your Sunday DJing,
+          Download your heat quicker
           <br />
-          not data-entering tracklists.
+          before it gets cold.
         </h1>
         <p className="text-muted max-w-xl text-lg leading-relaxed">
-          Screenshot any tracklist — a set, a playlist, a story. Crate Digger
+          Screenshot any tracklist — a set, a playlist, a story. cratecreep
           reads every track and fills your Beatport cart automatically. You just
           check out.
         </p>
@@ -41,7 +42,7 @@ export default function LandingPage() {
             href="/login"
             className="bg-accent text-accent-fg px-6 py-3 text-sm font-bold uppercase tracking-wider"
           >
-            Start free trial
+            Get started free
           </Link>
           <a
             href="#how"
@@ -80,26 +81,25 @@ export default function LandingPage() {
 
       <section className="mt-28">
         <div className="border-border bg-panel border p-8">
-          <div className="text-3xl font-bold">
-            $10<span className="text-muted text-base font-normal">/month</span>
-          </div>
+          <div className="text-3xl font-bold">Free during beta</div>
           <p className="text-muted mt-2 text-sm">
-            Unlimited tracklists. 7-day free trial. Cancel anytime.
+            Screenshot any tracklist and auto-fill your Beatport cart. Up to 10
+            screenshots per day while we&apos;re in early access.
           </p>
           <Link
             href="/login"
             className="bg-accent text-accent-fg mt-6 inline-block px-6 py-3 text-sm font-bold uppercase tracking-wider"
           >
-            Get started
+            Get started free
           </Link>
         </div>
       </section>
 
       <footer className="text-muted mt-auto flex flex-col gap-2 pt-24 text-xs">
         <p>
-          Crate Digger is a{' '}
+          cratecreep is a{' '}
           <a
-            href="https://gatekeep.app"
+            href={getGatekeepAppStoreUrl()}
             target="_blank"
             rel="noreferrer"
             className="text-accent hover:underline"

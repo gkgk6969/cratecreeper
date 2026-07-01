@@ -7,7 +7,7 @@ export default function TitleBar({ onOpenSettings }) {
       style={{ WebkitAppRegion: 'drag' }}
     >
       <div className="text-accent text-xs uppercase tracking-[0.2em] font-bold">
-        crate digger
+        cratecreep
       </div>
       <div
         className="flex items-center gap-3"
