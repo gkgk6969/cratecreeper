@@ -54,6 +54,12 @@ const TERMINAL_STATES = new Set<TrackState>([
 
 const BEATPORT_CART_URL = 'https://www.beatport.com/cart';
 
+// Chrome Web Store listing for the cratecreep extension. Override via
+// NEXT_PUBLIC_CHROME_STORE_URL if the listing moves.
+const CHROME_STORE_URL =
+  process.env.NEXT_PUBLIC_CHROME_STORE_URL ??
+  'https://chromewebstore.google.com/detail/abnpagmfbleekilgjbkogkidhhfconnl';
+
 export default function DashboardClient({
   userEmail,
   extensionId,
@@ -526,18 +532,39 @@ function ExtensionBanner({
 
   if (status === 'checking') {
     return (
-      <div className="border-border text-muted border px-3 py-2 text-xs">
-        Checking for the cratecreep extension…
+      <div className="border-border text-muted flex items-center gap-2 border px-3 py-2 text-xs">
+        <span className="border-muted inline-block h-3 w-3 animate-spin rounded-full border-2 border-t-transparent" />
+        Looking for the cratecreep extension…
       </div>
     );
   }
 
   if (status === 'missing') {
     return (
-      <div className="border-border bg-panel border px-3 py-3 text-xs">
-        <div className="text-muted leading-relaxed">
-          cratecreep extension not detected. Install it in Chrome — this page
-          connects automatically once it is enabled.
+      <div className="border-accent/40 bg-accent/5 flex flex-col gap-4 border p-5">
+        <div className="flex flex-col gap-1">
+          <div className="text-accent text-[11px] font-bold uppercase tracking-wider">
+            One more step
+          </div>
+          <div className="text-fg text-base font-bold leading-snug">
+            Add the cratecreep Chrome extension
+          </div>
+          <div className="text-muted text-xs leading-relaxed">
+            The extension does the boring part — searching Beatport and adding
+            each track to your cart while you work. Takes about 30 seconds.
+          </div>
+        </div>
+        <a
+          href={CHROME_STORE_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="bg-accent text-accent-fg inline-flex items-center justify-center px-4 py-3 text-sm font-bold uppercase tracking-wider transition-opacity hover:opacity-90"
+        >
+          Add to Chrome →
+        </a>
+        <div className="text-muted text-[11px] leading-relaxed">
+          After installing, this page connects automatically. If nothing
+          happens, refresh once.
         </div>
       </div>
     );
@@ -548,7 +575,7 @@ function ExtensionBanner({
     <div className="border-border bg-panel flex items-center justify-between border px-3 py-3 text-xs">
       <span className="text-muted flex items-center gap-2">
         <span className="border-accent inline-block h-3 w-3 animate-spin rounded-full border-2 border-t-transparent" />
-        Connecting extension…
+        Almost there — approving connection…
       </span>
       <button
         onClick={onConnect}

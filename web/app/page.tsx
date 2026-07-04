@@ -33,9 +33,10 @@ export default function LandingPage() {
           before it gets cold.
         </h1>
         <p className="text-muted max-w-xl text-lg leading-relaxed">
-          Screenshot any tracklist — a set, a playlist, a story. cratecreep
-          reads every track and fills your Beatport cart automatically. You just
-          check out.
+          Screenshot any playlist from Spotify, iTunes or a tracklist or whatever
+          you want. Cratecreep reads every track and fills your Beatport cart
+          automatically. You just press purchase, saving copious amounts of your
+          precious time.
         </p>
         <div className="mt-4 flex gap-3">
           <Link

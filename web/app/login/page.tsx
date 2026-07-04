@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { getGatekeepAppStoreUrl } from '@/lib/gatekeep';
 
+type Stage = 'email' | 'code' | 'password';
+
 export default function LoginPage() {
+  const [stage, setStage] = useState<Stage>('email');
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
-  const [usePassword, setUsePassword] = useState(false);
-  const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -27,23 +29,41 @@ export default function LoginPage() {
     window.location.href = '/dashboard';
   }
 
-  async function sendLink(e: React.FormEvent) {
+  // Sends a 6-digit code (no magic link click flow) so Gmail's link scanner
+  // can't burn the token before the user actually opens it.
+  async function sendCode(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { shouldCreateUser: true },
     });
     setLoading(false);
     if (error) {
       setError(error.message);
       return;
     }
-    setSent(true);
+    setStage('code');
+  }
+
+  async function verifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: code.trim(),
+      type: 'email',
+    });
+    setLoading(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    window.location.href = '/dashboard';
   }
 
   return (
@@ -65,15 +85,47 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      {sent ? (
-        <div className="border-border bg-panel border p-6">
-          <div className="font-bold">Check your email</div>
-          <p className="text-muted mt-2 text-sm leading-relaxed">
-            We sent a sign-in link to <span className="text-fg">{email}</span>.
-            Open it on this device to continue.
-          </p>
-        </div>
-      ) : usePassword ? (
+      {stage === 'code' ? (
+        <form onSubmit={verifyCode} className="flex flex-col gap-4">
+          <div className="text-muted text-sm leading-relaxed">
+            We sent a 6-digit code to{' '}
+            <span className="text-fg font-medium">{email}</span>.
+          </div>
+          <label className="text-muted text-xs uppercase tracking-wider">
+            Code
+          </label>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            required
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+            placeholder="123456"
+            className="border-border focus:border-accent w-full border bg-transparent p-3 text-center text-lg tracking-[0.5em] outline-none"
+          />
+          {error && <div className="text-danger text-xs">{error}</div>}
+          <button
+            type="submit"
+            disabled={loading || code.length < 6}
+            className="bg-accent text-accent-fg py-3 text-sm font-bold uppercase tracking-wider disabled:opacity-40"
+          >
+            {loading ? 'Verifying…' : 'Sign in'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setStage('email');
+              setCode('');
+              setError(null);
+            }}
+            className="text-muted hover:text-fg text-[11px] underline"
+          >
+            Use a different email
+          </button>
+        </form>
+      ) : stage === 'password' ? (
         <form onSubmit={signInWithPassword} className="flex flex-col gap-4">
           <label className="text-muted text-xs uppercase tracking-wider">
             Email
@@ -108,16 +160,16 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => {
-              setUsePassword(false);
+              setStage('email');
               setError(null);
             }}
             className="text-muted hover:text-fg text-[11px] underline"
           >
-            Use magic link instead
+            Use email code instead
           </button>
         </form>
       ) : (
-        <form onSubmit={sendLink} className="flex flex-col gap-4">
+        <form onSubmit={sendCode} className="flex flex-col gap-4">
           <label className="text-muted text-xs uppercase tracking-wider">
             Email
           </label>
@@ -135,15 +187,15 @@ export default function LoginPage() {
             disabled={loading}
             className="bg-accent text-accent-fg py-3 text-sm font-bold uppercase tracking-wider disabled:opacity-40"
           >
-            {loading ? 'Sending…' : 'Send sign-in link'}
+            {loading ? 'Sending…' : 'Send 6-digit code'}
           </button>
           <p className="text-muted text-[11px] leading-relaxed">
-            We use passwordless sign-in. No password to remember.
+            We&apos;ll email you a code to sign in. No password to remember.
           </p>
           <button
             type="button"
             onClick={() => {
-              setUsePassword(true);
+              setStage('password');
               setError(null);
             }}
             className="text-muted hover:text-fg text-[11px] underline"
