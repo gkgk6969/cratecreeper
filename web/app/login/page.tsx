@@ -29,7 +29,7 @@ export default function LoginPage() {
     window.location.href = '/dashboard';
   }
 
-  // Sends a 6-digit code (no magic link click flow) so Gmail's link scanner
+  // Sends an 8-digit code (no magic link click flow) so Gmail's link scanner
   // can't burn the token before the user actually opens it.
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
@@ -88,7 +88,7 @@ export default function LoginPage() {
       {stage === 'code' ? (
         <form onSubmit={verifyCode} className="flex flex-col gap-4">
           <div className="text-muted text-sm leading-relaxed">
-            We sent a 6-digit code to{' '}
+            We sent a sign-in code to{' '}
             <span className="text-fg font-medium">{email}</span>.
           </div>
           <label className="text-muted text-xs uppercase tracking-wider">
@@ -99,16 +99,16 @@ export default function LoginPage() {
             inputMode="numeric"
             autoComplete="one-time-code"
             required
-            maxLength={6}
+            maxLength={8}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-            placeholder="123456"
+            placeholder="12345678"
             className="border-border focus:border-accent w-full border bg-transparent p-3 text-center text-lg tracking-[0.5em] outline-none"
           />
           {error && <div className="text-danger text-xs">{error}</div>}
           <button
             type="submit"
-            disabled={loading || code.length < 6}
+            disabled={loading || code.length < 8}
             className="bg-accent text-accent-fg py-3 text-sm font-bold uppercase tracking-wider disabled:opacity-40"
           >
             {loading ? 'Verifying…' : 'Sign in'}
@@ -187,10 +187,10 @@ export default function LoginPage() {
             disabled={loading}
             className="bg-accent text-accent-fg py-3 text-sm font-bold uppercase tracking-wider disabled:opacity-40"
           >
-            {loading ? 'Sending…' : 'Send 6-digit code'}
+            {loading ? 'Sending…' : 'Send sign-in code'}
           </button>
           <p className="text-muted text-[11px] leading-relaxed">
-            We&apos;ll email you a code to sign in. No password to remember.
+            We&apos;ll email you an 8-digit code to sign in. No password to remember.
           </p>
           <button
             type="button"
