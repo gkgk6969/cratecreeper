@@ -208,10 +208,27 @@
 
   // Score every candidate and return the best plus the runner-up score, so the
   // caller can apply the min-score and ambiguity-gap rules.
+  //
+  // Beatport frequently renders the SAME track twice on a results page (row +
+  // release card + "also bought" panel). Left un-deduped, two identical
+  // candidates both score 1.00 and the ambiguity guard falsely bails on a
+  // perfect match. Dedupe by product URL first (falls back to a normalised
+  // artist/title/mix key when a button has no reachable /track/ link).
   function findBestMatch(track) {
     const candidates = collectInlineCartButtons();
     if (candidates.length === 0) return null;
-    const scored = candidates
+    const seen = new Set();
+    const unique = [];
+    for (const c of candidates) {
+      const url = trackAnchorFor(c.btn)?.href || '';
+      const key =
+        url ||
+        `${normForMatch(c.parsed.artist)}|${normForMatch(c.parsed.title)}|${canonMix(c.parsed.mix)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(c);
+    }
+    const scored = unique
       .map((c) => ({ ...c, ...scoreCandidate(track, c.parsed) }))
       .sort((a, b) => b.score - a.score);
     return {
@@ -336,16 +353,24 @@
     // artist term directly and flag for review rather than carting it.
     if (best.artistSim < CFG.matchMinArtistSim) {
       return {
-        state: 'ambiguous',
-        detail: `artist mismatch (wanted "${track.artist}", got "${
+        state: 'notfound',
+        detail: `wrong artist (best result was "${
           parsed.artist || '?'
-        }") - review on Beatport`,
+        }", not "${track.artist}")`,
         productUrl,
       };
     }
 
+    // Perfect exact match on all three terms: no ambiguity is possible even
+    // if a duplicate row scored equally, so short-circuit and cart it.
+    const isPerfect =
+      best.titleSim >= 0.99 &&
+      best.artistSim >= 0.99 &&
+      best.mixSim >= 0.99;
+
     // Two near-equal candidates above the threshold: flag for manual review.
     if (
+      !isPerfect &&
       secondScore >= CFG.matchMinScore &&
       best.score - secondScore < CFG.matchAmbiguousGap
     ) {

@@ -79,6 +79,7 @@ export default function DashboardClient({
 
   const [items, setItems] = useState<QueueItem[]>([]);
   const [beatportReady, setBeatportReady] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // --- Extension detection + auto-pair ------------------------------------
   // Prevents overlapping pair attempts (auto-pair retries on each poll tick).
@@ -278,9 +279,18 @@ export default function DashboardClient({
       )}
 
       {phase === 'idle' && (
-        <label
+        <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={onDrop}
+          onClick={() => fileInputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
           className="border-border hover:border-accent flex h-56 cursor-pointer flex-col items-center justify-center border border-dashed text-center transition-colors"
         >
           <div className="text-fg text-sm font-bold uppercase tracking-wider">
@@ -290,15 +300,17 @@ export default function DashboardClient({
             or click to choose · PNG, JPEG, WebP · max 4MB
           </div>
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/png,image/jpeg,image/webp"
-            className="hidden"
+            className="sr-only"
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) handleFile(f);
+              e.target.value = '';
             }}
           />
-        </label>
+        </div>
       )}
 
       {phase === 'extracting' && (
