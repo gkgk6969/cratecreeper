@@ -43,10 +43,29 @@ export async function POST(request: Request) {
   const admin = createSupabaseAdminClient();
   const unlimited = isUnlimited(user.email);
 
+  // Reserve a slot BEFORE calling Claude. Insert-then-count is atomic enough
+  // for our purposes: parallel requests all insert, then all count. Any that
+  // find themselves over the limit roll back their own row and reject. The
+  // previous count-then-insert order let concurrent requests race past the
+  // limit check and each burn a Claude call.
+  let reservedId: string | null = null;
   let used = 0;
+
   if (!unlimited) {
-    // Rate limit: count this user's extractions in the last 24h (service role,
-    // since extract_log has no client INSERT path).
+    const { data: inserted, error: insertErr } = await admin
+      .from('extract_log')
+      .insert({ user_id: user.id })
+      .select('id')
+      .single();
+
+    if (insertErr || !inserted) {
+      return NextResponse.json(
+        { error: 'Could not reserve extraction slot' },
+        { status: 500 }
+      );
+    }
+    reservedId = inserted.id as string;
+
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { count } = await admin
       .from('extract_log')
@@ -55,7 +74,8 @@ export async function POST(request: Request) {
       .gte('created_at', since);
 
     used = count ?? 0;
-    if (used >= DAILY_EXTRACT_LIMIT) {
+    if (used > DAILY_EXTRACT_LIMIT) {
+      await admin.from('extract_log').delete().eq('id', reservedId);
       return NextResponse.json(
         {
           error: `Daily limit reached (${DAILY_EXTRACT_LIMIT} screenshots). Try again tomorrow.`,
@@ -68,27 +88,29 @@ export async function POST(request: Request) {
   let tracks;
   try {
     tracks = await extractWithClaude(image.base64, image.mediaType);
-  } catch (e) {
+  } catch {
+    if (reservedId) {
+      await admin.from('extract_log').delete().eq('id', reservedId);
+    }
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'Extraction failed' },
+      { error: 'Extraction failed' },
       { status: 502 }
     );
   }
 
   if (tracks.length === 0) {
+    if (reservedId) {
+      await admin.from('extract_log').delete().eq('id', reservedId);
+    }
     return NextResponse.json(
       { error: 'No tracks found in this screenshot. Try a clearer image.' },
       { status: 422 }
     );
   }
 
-  await admin.from('extract_log').insert({ user_id: user.id });
-
   return NextResponse.json({
     tracks,
     source: 'claude',
-    extractsRemaining: unlimited
-      ? null
-      : Math.max(0, DAILY_EXTRACT_LIMIT - used - 1),
+    extractsRemaining: unlimited ? null : Math.max(0, DAILY_EXTRACT_LIMIT - used),
   });
 }
