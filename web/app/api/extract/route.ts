@@ -7,6 +7,18 @@ import { DAILY_EXTRACT_LIMIT } from '@/lib/types';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+// Emails allowed to bypass the daily limit (e.g. founder demoing / recording
+// videos). Comma-separated, matched case-insensitively.
+function isUnlimited(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const raw = process.env.UNLIMITED_EMAILS ?? '';
+  const allow = raw
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return allow.includes(email.toLowerCase());
+}
+
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -17,7 +29,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  // Parse + validate the upload before spending a Claude call.
   let image: { base64: string; mediaType: string };
   try {
     const body = await request.json();
@@ -29,24 +40,29 @@ export async function POST(request: Request) {
     );
   }
 
-  // Rate limit: count this user's extractions in the last 24h (service role,
-  // since extract_log has no client INSERT path).
   const admin = createSupabaseAdminClient();
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { count } = await admin
-    .from('extract_log')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .gte('created_at', since);
+  const unlimited = isUnlimited(user.email);
 
-  const used = count ?? 0;
-  if (used >= DAILY_EXTRACT_LIMIT) {
-    return NextResponse.json(
-      {
-        error: `Daily limit reached (${DAILY_EXTRACT_LIMIT} screenshots). Try again tomorrow.`,
-      },
-      { status: 429 }
-    );
+  let used = 0;
+  if (!unlimited) {
+    // Rate limit: count this user's extractions in the last 24h (service role,
+    // since extract_log has no client INSERT path).
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count } = await admin
+      .from('extract_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('created_at', since);
+
+    used = count ?? 0;
+    if (used >= DAILY_EXTRACT_LIMIT) {
+      return NextResponse.json(
+        {
+          error: `Daily limit reached (${DAILY_EXTRACT_LIMIT} screenshots). Try again tomorrow.`,
+        },
+        { status: 429 }
+      );
+    }
   }
 
   let tracks;
@@ -71,6 +87,8 @@ export async function POST(request: Request) {
   return NextResponse.json({
     tracks,
     source: 'claude',
-    extractsRemaining: Math.max(0, DAILY_EXTRACT_LIMIT - used - 1),
+    extractsRemaining: unlimited
+      ? null
+      : Math.max(0, DAILY_EXTRACT_LIMIT - used - 1),
   });
 }
