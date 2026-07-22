@@ -192,6 +192,18 @@ function scheduleLoadSession(sessionId) {
 
 async function loadSession(sessionId, autostart) {
   if (!sb) return;
+
+  // Guard: if we're already running this exact session, do nothing. Realtime
+  // INSERTs and the dashboard's direct startSession message race with each
+  // other, and a mid-run reload used to reset currentIdx=-1 and skip track 0
+  // (its DB row was already 'searching', so the pending-scan jumped ahead).
+  if (
+    STATE.queue?.sessionId === sessionId &&
+    (STATE.running || STATE.currentIdx >= 0)
+  ) {
+    return;
+  }
+
   const { data, error } = await sb
     .from('queue_items')
     .select('id, idx, artist, title, mix, state, detail, product_url')

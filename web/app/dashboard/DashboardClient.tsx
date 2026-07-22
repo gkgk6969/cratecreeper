@@ -78,6 +78,7 @@ export default function DashboardClient({
   const [pairing, setPairing] = useState(false);
 
   const [items, setItems] = useState<QueueItem[]>([]);
+  const [beatportReady, setBeatportReady] = useState(false);
 
   // --- Extension detection + auto-pair ------------------------------------
   // Prevents overlapping pair attempts (auto-pair retries on each poll tick).
@@ -249,6 +250,7 @@ export default function DashboardClient({
     setItems([]);
     setPhase('idle');
     setError(null);
+    setBeatportReady(false);
   }
 
   const selectedCount = tracks.filter((t) => t.selected).length;
@@ -349,21 +351,55 @@ export default function DashboardClient({
             ))}
           </ul>
 
+          {extStatus === 'paired' && (
+            <div className="border-amber-500/60 bg-amber-500/10 flex flex-col gap-3 border p-4">
+              <div className="flex flex-col gap-1">
+                <div className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                  Before you press Go
+                </div>
+                <div className="text-fg text-sm font-bold leading-snug">
+                  You must be signed into Beatport
+                </div>
+                <div className="text-muted text-xs leading-relaxed">
+                  Cratecreep uses your own Beatport account to add tracks. If
+                  you&apos;re not logged in, the cart will stay empty.
+                </div>
+              </div>
+              <a
+                href="https://www.beatport.com/account/login"
+                target="_blank"
+                rel="noreferrer"
+                className="text-accent text-xs font-bold uppercase tracking-wider underline underline-offset-2"
+              >
+                Open Beatport and sign in →
+              </a>
+              <label className="text-fg flex cursor-pointer items-start gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={beatportReady}
+                  onChange={(e) => setBeatportReady(e.target.checked)}
+                  className="mt-[2px]"
+                />
+                <span>I&apos;m signed into Beatport and ready to go.</span>
+              </label>
+            </div>
+          )}
+
           <button
             onClick={sendToBeatport}
-            disabled={selectedCount === 0 || extStatus !== 'paired'}
+            disabled={
+              selectedCount === 0 ||
+              extStatus !== 'paired' ||
+              !beatportReady
+            }
             className="bg-accent text-accent-fg py-3 text-sm font-bold uppercase tracking-wider disabled:opacity-30"
           >
-            {extStatus === 'paired'
-              ? `Send ${selectedCount} to Beatport cart`
-              : 'Connect extension to continue'}
+            {extStatus !== 'paired'
+              ? 'Connect extension to continue'
+              : !beatportReady
+                ? 'Confirm you are signed into Beatport'
+                : `Send ${selectedCount} to Beatport cart`}
           </button>
-          {extStatus === 'paired' && (
-            <p className="text-muted text-[11px] leading-relaxed">
-              Make sure Beatport is open and you are logged in. The extension
-              will walk through each track in a single tab.
-            </p>
-          )}
         </div>
       )}
 
@@ -547,11 +583,10 @@ function ExtensionBanner({
             One more step
           </div>
           <div className="text-fg text-base font-bold leading-snug">
-            Add the cratecreep Chrome extension
+            Install the cratecreep extension
           </div>
           <div className="text-muted text-xs leading-relaxed">
-            The extension does the boring part — searching Beatport and adding
-            each track to your cart while you work. Takes about 30 seconds.
+            You need our Chrome extension installed for cratecreep to work.
           </div>
         </div>
         <a
@@ -563,8 +598,8 @@ function ExtensionBanner({
           Add to Chrome →
         </a>
         <div className="text-muted text-[11px] leading-relaxed">
-          After installing, this page connects automatically. If nothing
-          happens, refresh once.
+          Once installed, this page hooks up automatically. Refresh if it
+          doesn&apos;t.
         </div>
       </div>
     );
