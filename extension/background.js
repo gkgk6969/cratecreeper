@@ -511,6 +511,25 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       sendResponse({ ok: true });
       return;
     }
+    if (msg?.type === 'pauseSession') {
+      await pauseQueue();
+      sendResponse({ ok: true, paused: true });
+      return;
+    }
+    if (msg?.type === 'resumeSession') {
+      // startQueue bails if already running or no queue. If a queue is loaded
+      // but not running, kick it back off from where it left off.
+      if (STATE.queue && !STATE.running) {
+        STATE.running = true;
+        await saveState();
+        notifyPopup();
+        processNext();
+        sendResponse({ ok: true, running: true });
+        return;
+      }
+      sendResponse({ ok: STATE.running, running: STATE.running });
+      return;
+    }
     sendResponse({ ok: false });
   })();
   return true;

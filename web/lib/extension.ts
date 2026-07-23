@@ -104,3 +104,29 @@ export async function startQueueInExtension(
   });
   return !!res?.ok;
 }
+
+export async function pauseQueueInExtension(
+  extensionId: string
+): Promise<boolean> {
+  try {
+    const res = await send<{ ok?: boolean }>(extensionId, {
+      type: 'pauseSession',
+    });
+    return !!res?.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function resumeQueueInExtension(
+  extensionId: string
+): Promise<boolean> {
+  try {
+    const res = await send<{ ok?: boolean }>(extensionId, {
+      type: 'resumeSession',
+    });
+    return !!res?.ok;
+  } catch {
+    return false;
+  }
+}

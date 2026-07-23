@@ -7,6 +7,8 @@ import {
   pingExtension,
   pairExtension,
   startQueueInExtension,
+  pauseQueueInExtension,
+  resumeQueueInExtension,
 } from '@/lib/extension';
 import type { QueueItem, TrackState } from '@/lib/types';
 
@@ -79,6 +81,9 @@ export default function DashboardClient({
 
   const [items, setItems] = useState<QueueItem[]>([]);
   const [beatportReady, setBeatportReady] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [pauseBusy, setPauseBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // --- Extension detection + auto-pair ------------------------------------
@@ -185,6 +190,7 @@ export default function DashboardClient({
     const selected = tracks.filter((t) => t.selected);
     if (selected.length === 0) return;
     setError(null);
+    setSending(true);
     try {
       const res = await fetch('/api/queue', {
         method: 'POST',
@@ -202,15 +208,33 @@ export default function DashboardClient({
 
       const sessionId: string = data.sessionId;
       await subscribeToSession(sessionId);
-      // Nudge the extension to begin walking this session immediately.
       try {
         await startQueueInExtension(extensionId, sessionId);
       } catch {
         // Extension picks up the new rows via realtime regardless.
       }
+      setPaused(false);
       setPhase('running');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not start');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function togglePause() {
+    if (pauseBusy) return;
+    setPauseBusy(true);
+    try {
+      if (paused) {
+        const ok = await resumeQueueInExtension(extensionId);
+        if (ok) setPaused(false);
+      } else {
+        const ok = await pauseQueueInExtension(extensionId);
+        if (ok) setPaused(true);
+      }
+    } finally {
+      setPauseBusy(false);
     }
   }
 
@@ -402,15 +426,23 @@ export default function DashboardClient({
             disabled={
               selectedCount === 0 ||
               extStatus !== 'paired' ||
-              !beatportReady
+              !beatportReady ||
+              sending
             }
-            className="bg-accent text-accent-fg py-3 text-sm font-bold uppercase tracking-wider disabled:opacity-30"
+            className="bg-accent text-accent-fg group relative flex items-center justify-center gap-2 overflow-hidden py-3 text-sm font-bold uppercase tracking-wider shadow-[0_4px_0_rgba(0,0,0,0.08)] transition-all duration-150 hover:brightness-110 hover:shadow-[0_6px_0_rgba(0,0,0,0.10)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.06)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:brightness-100 disabled:active:translate-y-0"
           >
-            {extStatus !== 'paired'
-              ? 'Connect extension to continue'
-              : !beatportReady
-                ? 'Confirm you are signed into Beatport'
-                : `Send ${selectedCount} to Beatport cart`}
+            {sending && (
+              <span className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            )}
+            <span>
+              {sending
+                ? 'Sending to Beatport…'
+                : extStatus !== 'paired'
+                  ? 'Connect extension to continue'
+                  : !beatportReady
+                    ? 'Confirm you are signed into Beatport'
+                    : `Send ${selectedCount} to Beatport cart`}
+            </span>
           </button>
         </div>
       )}
@@ -420,8 +452,15 @@ export default function DashboardClient({
           <div className="border-border bg-panel border p-5">
             <div className="flex items-end justify-between">
               <div>
-                <div className="text-muted text-xs uppercase tracking-wider">
-                  {allDone ? 'Done' : 'Filling your cart…'}
+                <div className="text-muted flex items-center gap-2 text-xs uppercase tracking-wider">
+                  {allDone
+                    ? 'Done'
+                    : paused
+                      ? 'Paused'
+                      : 'Filling your cart…'}
+                  {!allDone && paused && (
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  )}
                 </div>
                 <div className="mt-1 text-3xl font-bold tabular-nums">
                   {inCartCount}
@@ -434,16 +473,39 @@ export default function DashboardClient({
                   </span>
                 </div>
               </div>
-              <button
-                onClick={reset}
-                className="text-muted hover:text-fg text-xs uppercase tracking-wider"
-              >
-                New screenshot
-              </button>
+              <div className="flex flex-col items-end gap-2">
+                {!allDone && (
+                  <button
+                    onClick={togglePause}
+                    disabled={pauseBusy}
+                    className="border-border bg-bg hover:border-accent flex items-center gap-2 border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-40"
+                  >
+                    {paused ? (
+                      <>
+                        <span aria-hidden>▶</span>
+                        Resume
+                      </>
+                    ) : (
+                      <>
+                        <span aria-hidden>❚❚</span>
+                        Pause
+                      </>
+                    )}
+                  </button>
+                )}
+                <button
+                  onClick={reset}
+                  className="text-muted hover:text-fg text-xs uppercase tracking-wider"
+                >
+                  New screenshot
+                </button>
+              </div>
             </div>
             <div className="bg-border mt-4 h-2 w-full overflow-hidden rounded-full">
               <div
-                className="bg-accent cd-bar-fill h-full rounded-full"
+                className={`bg-accent cd-bar-fill h-full rounded-full ${
+                  paused ? 'opacity-50' : ''
+                }`}
                 style={{ width: `${pct}%` }}
               />
             </div>

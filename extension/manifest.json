@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Gatekeep · cratecreep",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Pairs with the Gatekeep cratecreep web app to fill your Beatport cart from a tracklist screenshot.",
   "permissions": ["tabs", "storage", "alarms", "scripting"],
   "host_permissions": [
