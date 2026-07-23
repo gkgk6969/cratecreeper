@@ -26,6 +26,7 @@ export function VariantC({ intensity }: { intensity: number }) {
       <Flame
         intensity={0.3 + intensity * 0.7}
         seed={33}
+        columns={3}
         className="absolute inset-0"
       />
     </div>

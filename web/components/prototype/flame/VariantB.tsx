@@ -21,6 +21,7 @@ export function VariantBDashboardHero({ intensity }: { intensity: number }) {
       <Flame
         intensity={0.15 + intensity * 0.85}
         seed={22}
+        columns={7}
         className="absolute inset-0"
       />
     </div>
@@ -40,6 +41,7 @@ export function VariantBHeaderEmber({ intensity }: { intensity: number }) {
       <Flame
         intensity={0.35 + intensity * 0.4}
         seed={22}
+        columns={2}
         className="absolute inset-0"
       />
     </div>
