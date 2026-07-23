@@ -75,22 +75,23 @@ drop policy if exists subs_select on subscriptions;
 create policy subs_select on subscriptions
   for select using (auth.uid() = user_id);
 
--- sessions: user reads own, only while subscribed.
+-- sessions: user reads own row. Subscription gate removed for the free beta;
+-- put `and is_subscribed(auth.uid())` back when the paywall goes live.
 drop policy if exists sessions_select on sessions;
 create policy sessions_select on sessions
-  for select using (auth.uid() = user_id and is_subscribed(auth.uid()));
+  for select using (auth.uid() = user_id);
 
--- queue_items: user SELECT own rows when subscribed (powers web + extension reads).
+-- queue_items: user SELECT own rows (powers web + extension reads).
 drop policy if exists items_select on queue_items;
 create policy items_select on queue_items
-  for select using (auth.uid() = user_id and is_subscribed(auth.uid()));
+  for select using (auth.uid() = user_id);
 
--- queue_items: extension UPDATE own rows only, when subscribed.
+-- queue_items: extension UPDATE own rows only.
 -- No INSERT/DELETE policy: queue creation is server-side (service role) only.
 drop policy if exists items_update on queue_items;
 create policy items_update on queue_items
   for update
-  using (auth.uid() = user_id and is_subscribed(auth.uid()))
+  using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- extract_log: user reads own (for the "extracts remaining" counter).
